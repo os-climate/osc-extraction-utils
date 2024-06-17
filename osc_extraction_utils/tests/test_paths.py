@@ -14,7 +14,11 @@ def path_folder_config_path() -> Path:
 
 @pytest.fixture
 def paths_project(main_settings: MainSettings) -> ProjectPaths:
-    return ProjectPaths(string_project_name="test_project", main_settings=main_settings)
+    return ProjectPaths(
+        string_project_name="test_project",
+        main_settings=main_settings,
+        path_folder_root=Path(__file__).parents[2].resolve(),
+    )
 
 
 def test_root_folder_set(path_folder_config_path: Path, paths_project: ProjectPaths):
@@ -59,7 +63,9 @@ def test_check_that_all_required_paths_exist_in_project_path_object(main_setting
     with patch.object(ProjectPaths, "_update_all_paths_depending_on_path_project_data_folder"), patch.object(
         ProjectPaths, "_update_all_paths_depending_on_path_project_model_folder"
     ):
-        paths_project: ProjectPaths = ProjectPaths("new_test_project", main_settings)
+        paths_project: ProjectPaths = ProjectPaths(
+            "new_test_project", main_settings, Path(__file__).parents[1].resolve()
+        )
 
         for path_field in paths_project.model_fields.keys():
             path_field_attribute: Path = getattr(paths_project, f"{path_field}")
@@ -71,7 +77,7 @@ def test_project_paths_update_methods_are_called(main_settings: MainSettings):
         patch.object(ProjectPaths, "_update_all_paths_depending_on_path_project_data_folder") as mocked_update_data,
         patch.object(ProjectPaths, "_update_all_paths_depending_on_path_project_model_folder") as mocked_update_model,
     ):
-        ProjectPaths("new_test_project", main_settings)
+        ProjectPaths("new_test_project", main_settings, Path(__file__).parents[1].resolve())
 
     mocked_update_data.assert_called_once()
     mocked_update_model.assert_called_once()
@@ -108,6 +114,33 @@ def test_set_main_settings(paths_project: ProjectPaths, main_settings: Settings)
 
     paths_project.main_settings = main_settings_changed
     assert paths_project.main_settings != main_settings
+
+
+def test_update_all_root_related_paths(main_settings: MainSettings, path_folder_temporary: Path):
+    string_test_project: str = "test_project"
+    path_folder_project_root = path_folder_temporary / "test_project"
+
+    project_paths = ProjectPaths(string_test_project, main_settings, path_folder_project_root)
+
+    assert project_paths._PATH_FOLDER_ROOT == path_folder_project_root
+    assert project_paths._PATH_FOLDER_NLP == path_folder_project_root
+    assert project_paths._PATH_FOLDER_MODEL == path_folder_project_root / "models"
+    assert project_paths._PATH_FOLDER_DATA == path_folder_project_root / "data"
+
+
+def test_create_all_root_related_paths(main_settings: MainSettings, path_folder_temporary: Path):
+    string_test_project: str = "test_project"
+    path_folder_project_root = path_folder_temporary / "test_project"
+    list_paths_expected = [
+        path_folder_project_root,
+        path_folder_project_root / "models",
+        path_folder_project_root / "data",
+    ]
+
+    ProjectPaths(string_test_project, main_settings, path_folder_project_root)
+
+    for path in list_paths_expected:
+        assert path.exists()
 
 
 def test_update_all_paths_depending_on_path_project_data_folder(paths_project: ProjectPaths):

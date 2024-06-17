@@ -128,7 +128,7 @@ def s3_settings() -> S3Settings:
 # TODO add test mode paths?
 @pytest.fixture(scope="session")
 def project_paths(main_settings: MainSettings) -> ProjectPaths:
-    return ProjectPaths("test_project", main_settings)
+    return ProjectPaths("test_project", main_settings, Path(__file__).parents[1].resolve())
 
 
 @pytest.fixture(scope="session")
